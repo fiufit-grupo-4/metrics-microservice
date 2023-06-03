@@ -1,10 +1,13 @@
+import asyncio
 from fastapi import FastAPI
 from app.controller_example import router as example_router
-import pymongo
 import logging
 from logging.config import dictConfig
+
+from app.consumer.consumer_queue import runConsumerQueue
 from .log_config import logconfig
 from os import environ
+import os
 
 # MONGODB_URI = environ["MONGODB_URI"]
 
@@ -15,6 +18,7 @@ logger = logging.getLogger('app')
 
 @app.on_event("startup")
 async def startup_db_client():
+    app.task_publisher_manager = asyncio.create_task(runConsumerQueue())
     # try:
     #     app.mongodb_client = pymongo.MongoClient(MONGODB_URI)
     #     logger.info("Connected successfully MongoDB")
@@ -34,7 +38,8 @@ async def startup_db_client():
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
-    app.mongodb_client.close()
+    app.task_publisher_manager.cancel()
+    app.consumer.stop()
     logger.info("Shutdown APP")
 
 
