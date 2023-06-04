@@ -3,6 +3,7 @@ import os
 import time
 import pika
 from app.consumer.message_queue_wrapper import MesseageQueueWrapper
+from app.consumer.queue_settings import EXCHANGE, EXCHANGE_TYPE, QUEUE, ROUTING_KEY
 import app.main as main
 
 from pika.adapters.asyncio_connection import AsyncioConnection
@@ -23,11 +24,6 @@ class ConsumerQueue(object):
     """
     instance = None # For Singleton pattern!
 
-    EXCHANGE = "get_me_hired_exchange"
-    EXCHANGE_TYPE = "direct"
-    QUEUE = "get_me_hired_queue"
-    ROUTING_KEY = "jobs_search"
-    
     def __new__(cls,  amqp_url):
         """Create a new instance of the consumer class, passing in the AMQP
         URL used to connect to RabbitMQ.
@@ -145,7 +141,7 @@ class ConsumerQueue(object):
         main.logger.info('Channel opened')
         cls.instance._channel = channel
         cls.instance.add_on_channel_close_callback()
-        cls.instance.setup_exchange(cls.instance.EXCHANGE)
+        cls.instance.setup_exchange(EXCHANGE)
 
     def add_on_channel_close_callback(cls):
         """This method tells pika to call the on_channel_closed method if
@@ -184,7 +180,7 @@ class ConsumerQueue(object):
             cls.instance.on_exchange_declareok, userdata=exchange_name)
         cls.instance._channel.exchange_declare(
             exchange=exchange_name,
-            exchange_type=cls.instance.EXCHANGE_TYPE,
+            exchange_type=EXCHANGE_TYPE,
             callback=cb)
 
     def on_exchange_declareok(cls, _unused_frame, userdata):
@@ -196,7 +192,7 @@ class ConsumerQueue(object):
 
         """
         main.logger.info('Exchange declared: %s', userdata)
-        cls.instance.setup_queue(cls.instance.QUEUE)
+        cls.instance.setup_queue(QUEUE)
 
     def setup_queue(cls, queue_name):
         """Setup the queue on RabbitMQ by invoking the Queue.Declare RPC
@@ -222,13 +218,13 @@ class ConsumerQueue(object):
 
         """
         queue_name = userdata
-        main.logger.info('Binding %s to %s with %s', cls.instance.EXCHANGE, queue_name,
-                    cls.instance.ROUTING_KEY)
+        main.logger.info('Binding %s to %s with %s', EXCHANGE, queue_name,
+                    ROUTING_KEY)
         cb = functools.partial(cls.instance.on_bindok, userdata=queue_name)
         cls.instance._channel.queue_bind(
             queue_name,
-            cls.instance.EXCHANGE,
-            routing_key=cls.instance.ROUTING_KEY,
+            EXCHANGE,
+            routing_key=ROUTING_KEY,
             callback=cb)
 
     def on_bindok(cls, _unused_frame, userdata):
@@ -276,7 +272,7 @@ class ConsumerQueue(object):
         main.logger.info('Issuing consumer related RPC commands')
         cls.instance.add_on_cancel_callback()
         cls.instance._consumer_tag = cls.instance._channel.basic_consume(
-            cls.instance.QUEUE, cls.instance.on_message)
+            QUEUE, cls.instance.on_message)
         cls.instance.was_consuming = True
         cls.instance._consuming = True
 
@@ -315,8 +311,8 @@ class ConsumerQueue(object):
         :param bytes body: The message body
 
         """
-        MesseageQueueWrapper(channel, basic_deliver, properties, body)
-        
+        # recibiré mensajes y los proceso de forma asincrona
+        cls.instance._connection.ioloop.create_task(MesseageQueueWrapper(channel, basic_deliver, properties, body))
         # !TODO ni idea para que son los ACK en esto, pero por las dudas..
         cls.instance.acknowledge_message(basic_deliver.delivery_tag) 
         
