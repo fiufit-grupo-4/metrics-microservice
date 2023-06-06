@@ -1,7 +1,9 @@
+import asyncio
 from fastapi import FastAPI
 import sqlalchemy
 import logging
 from logging.config import dictConfig
+from app.consumer.consumer_queue import runConsumerQueue
 from .log_config import logconfig
 from dotenv import load_dotenv
 import os
@@ -22,6 +24,7 @@ database = databases.Database(DATABASE_URL)
 @app.on_event("startup")
 async def startup():
     try:
+        app.task_publisher_manager = asyncio.create_task(runConsumerQueue())
         await database.connect()
         metadata = sqlalchemy.MetaData()
 
@@ -48,6 +51,9 @@ async def startup():
 @app.on_event("shutdown")
 async def shutdown():
     await database.disconnect()
+    app.task_publisher_manager.cancel()
+    app.consumer.stop()
+    logger.info("Shutdown APP")
 
 
 app.include_router(
