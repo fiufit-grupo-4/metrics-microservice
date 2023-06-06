@@ -1,46 +1,63 @@
 import asyncio
 from fastapi import FastAPI
-from app.controller_example import router as example_router
+import sqlalchemy
 import logging
 from logging.config import dictConfig
-
 from app.consumer.consumer_queue import runConsumerQueue
 from .log_config import logconfig
-from os import environ
+from dotenv import load_dotenv
 import os
+import databases
+from .feature.notes import notes_router
 
-# MONGODB_URI = environ["MONGODB_URI"]
 
 dictConfig(logconfig)
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
 app = FastAPI()
 logger = logging.getLogger('app')
+database = databases.Database(DATABASE_URL)
 
 
 @app.on_event("startup")
-async def startup_db_client():
-    app.task_publisher_manager = asyncio.create_task(runConsumerQueue())
-    # try:
-    #     app.mongodb_client = pymongo.MongoClient(MONGODB_URI)
-    #     logger.info("Connected successfully MongoDB")
+async def startup():
+    try:
+        app.task_publisher_manager = asyncio.create_task(runConsumerQueue())
+        await database.connect()
+        metadata = sqlalchemy.MetaData()
 
-    # except Exception as e:
-    #     logger.error(e)
-    #     logger.error("Could not connect to MongoDB")
+        notes = sqlalchemy.Table(
+            "notes",
+            metadata,
+            sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+            sqlalchemy.Column("text", sqlalchemy.String),
+            sqlalchemy.Column("completed", sqlalchemy.Boolean),
+        )
 
-    # How to build a collection
-    # db = app.mongodb_client["example-db"]
-    # collection = db.example_collection
+        engine = sqlalchemy.create_engine(DATABASE_URL)
+        metadata.create_all(engine)
 
-    # collection.delete_many({})  # Clear collection data
-    
-    logger.info("Startup APP!")
+        app.logger = logger
+        app.database = database
+        app.notes_table = notes
+
+    except Exception as e:
+        logger.error(e)
+        logger.error("Could not connect to Postgres")
 
 
 @app.on_event("shutdown")
-async def shutdown_db_client():
+async def shutdown():
+    await database.disconnect()
     app.task_publisher_manager.cancel()
     app.consumer.stop()
     logger.info("Shutdown APP")
 
 
-app.include_router(example_router)
+app.include_router(
+    notes_router,
+    prefix="/notes",
+    tags=["Notes - Metrics Microservice"],
+)
