@@ -8,6 +8,13 @@ import app.main as main
 
 from pika.adapters.asyncio_connection import AsyncioConnection
 
+# Este codigo fue extraido de los ejemplos de la documentacion de pika, 
+# pero se lo adapto para que funcione con el resto del codigo de la aplicacion
+# de forma asincronica
+# REFERENCIAS:
+# - https://pika.readthedocs.io/en/stable/intro.html
+# - https://pika.readthedocs.io/en/stable/examples.html
+# - https://github.com/pika/pika/blob/main/examples/asyncio_consumer_example.py
 
 class ConsumerQueue(object):
     """This is an example consumer that will handle unexpected interactions
