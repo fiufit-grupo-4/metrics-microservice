@@ -15,7 +15,12 @@ entries_router = APIRouter()
 
 @entries_router.post("/entries")
 async def add_entry(entry: EntryCreate, session: AsyncSession = Depends(get_session)):
-    entry = Entry(timestamp=entry.timestamp, service_name=entry.service_name, http_method=entry.http_method, status_code=entry.status_code)
+    entry = Entry(
+        timestamp=entry.timestamp,
+        service_name=entry.service_name,
+        http_method=entry.http_method,
+        status_code=entry.status_code,
+    )
     session.add(entry)
     await session.commit()
     await session.refresh(entry)
@@ -26,11 +31,26 @@ async def add_entry(entry: EntryCreate, session: AsyncSession = Depends(get_sess
 async def get_entry(id: int, session: AsyncSession = Depends(get_session)):
     result = await session.execute(select(Entry).where(Entry.id == id))
     entry = result.scalars().first()
-    return Entry(id=entry.id, timestamp=entry.timestamp, service_name=entry.service_name, http_method=entry.http_method, status_code=entry.status_code)
+    return Entry(
+        id=entry.id,
+        timestamp=entry.timestamp,
+        service_name=entry.service_name,
+        http_method=entry.http_method,
+        status_code=entry.status_code,
+    )
 
 
 @entries_router.get("/entries", response_model=list[Entry])
-async def get_entry(session: AsyncSession = Depends(get_session)):
+async def get_entries(session: AsyncSession = Depends(get_session)):
     result = await session.execute(select(Entry))
     entries = result.scalars().all()
-    return [Entry(id=entry.id, timestamp=entry.timestamp, service_name=entry.service_name, http_method=entry.http_method, status_code=entry.status_code) for entry in entries]
+    return [
+        Entry(
+            id=entry.id,
+            timestamp=entry.timestamp,
+            service_name=entry.service_name,
+            http_method=entry.http_method,
+            status_code=entry.status_code,
+        )
+        for entry in entries
+    ]

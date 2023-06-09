@@ -8,13 +8,14 @@ import app.main as main
 
 from pika.adapters.asyncio_connection import AsyncioConnection
 
-# Este codigo fue extraido de los ejemplos de la documentacion de pika, 
+# Este codigo fue extraido de los ejemplos de la documentacion de pika,
 # pero se lo adapto para que funcione con el resto del codigo de la aplicacion
 # de forma asincronica
 # REFERENCIAS:
 # - https://pika.readthedocs.io/en/stable/intro.html
 # - https://pika.readthedocs.io/en/stable/examples.html
 # - https://github.com/pika/pika/blob/main/examples/asyncio_consumer_example.py
+
 
 class ConsumerQueue(object):
     """This is an example consumer that will handle unexpected interactions
@@ -29,9 +30,10 @@ class ConsumerQueue(object):
     commands that were issued and that should surface in the output as well.
 
     """
-    instance = None # For Singleton pattern!
 
-    def __new__(cls,  amqp_url):
+    instance = None  # For Singleton pattern!
+
+    def __new__(cls, amqp_url):
         """Create a new instance of the consumer class, passing in the AMQP
         URL used to connect to RabbitMQ.
 
@@ -54,7 +56,7 @@ class ConsumerQueue(object):
             # for higher consumer throughput
             cls.instance._prefetch_count = 1
         return cls.instance
-    
+
     def connect(cls):
         """This method connects to RabbitMQ, returning the connection handle.
         When the connection is established, the on_connection_open method
@@ -68,7 +70,8 @@ class ConsumerQueue(object):
             parameters=pika.URLParameters(cls.instance._url),
             on_open_callback=cls.instance.on_connection_open,
             on_open_error_callback=cls.instance.on_connection_open_error,
-            on_close_callback=cls.instance.on_connection_closed)
+            on_close_callback=cls.instance.on_connection_closed,
+        )
 
     def close_connection(cls):
         cls.instance._consuming = False
@@ -185,11 +188,11 @@ class ConsumerQueue(object):
         # Note: using functools.partial is not required, it is demonstrating
         # how arbitrary data can be passed to the callback when it is called
         cb = functools.partial(
-            cls.instance.on_exchange_declareok, userdata=exchange_name)
+            cls.instance.on_exchange_declareok, userdata=exchange_name
+        )
         cls.instance._channel.exchange_declare(
-            exchange=exchange_name,
-            exchange_type=EXCHANGE_TYPE,
-            callback=cb)
+            exchange=exchange_name, exchange_type=EXCHANGE_TYPE, callback=cb
+        )
 
     def on_exchange_declareok(cls, _unused_frame, userdata):
         """Invoked by pika when RabbitMQ has finished the Exchange.Declare RPC
@@ -226,14 +229,11 @@ class ConsumerQueue(object):
 
         """
         queue_name = userdata
-        main.logger.info('Binding %s to %s with %s', EXCHANGE, queue_name,
-                    ROUTING_KEY)
+        main.logger.info('Binding %s to %s with %s', EXCHANGE, queue_name, ROUTING_KEY)
         cb = functools.partial(cls.instance.on_bindok, userdata=queue_name)
         cls.instance._channel.queue_bind(
-            queue_name,
-            EXCHANGE,
-            routing_key=ROUTING_KEY,
-            callback=cb)
+            queue_name, EXCHANGE, routing_key=ROUTING_KEY, callback=cb
+        )
 
     def on_bindok(cls, _unused_frame, userdata):
         """Invoked by pika when the Queue.Bind method has completed. At this
@@ -254,7 +254,9 @@ class ConsumerQueue(object):
 
         """
         cls.instance._channel.basic_qos(
-            prefetch_count=cls.instance._prefetch_count, callback=cls.instance.on_basic_qos_ok)
+            prefetch_count=cls.instance._prefetch_count,
+            callback=cls.instance.on_basic_qos_ok,
+        )
 
     def on_basic_qos_ok(cls, _unused_frame):
         """Invoked by pika when the Basic.QoS method has completed. At this
@@ -280,7 +282,8 @@ class ConsumerQueue(object):
         main.logger.info('Issuing consumer related RPC commands')
         cls.instance.add_on_cancel_callback()
         cls.instance._consumer_tag = cls.instance._channel.basic_consume(
-            QUEUE, cls.instance.on_message)
+            QUEUE, cls.instance.on_message
+        )
         cls.instance.was_consuming = True
         cls.instance._consuming = True
 
@@ -300,8 +303,9 @@ class ConsumerQueue(object):
         :param pika.frame.Method method_frame: The Basic.Cancel frame
 
         """
-        main.logger.info('Consumer was cancelled remotely, shutting down: %r',
-                    method_frame)
+        main.logger.info(
+            'Consumer was cancelled remotely, shutting down: %r', method_frame
+        )
         if cls.instance._channel:
             cls.instance._channel.close()
 
@@ -320,10 +324,12 @@ class ConsumerQueue(object):
 
         """
         # recibiré mensajes y los proceso de forma asincrona
-        cls.instance._connection.ioloop.create_task(MesseageQueueWrapper(channel, basic_deliver, properties, body))
+        cls.instance._connection.ioloop.create_task(
+            MesseageQueueWrapper(channel, basic_deliver, properties, body)
+        )
         # !TODO ni idea para que son los ACK en esto, pero por las dudas..
-        cls.instance.acknowledge_message(basic_deliver.delivery_tag) 
-        
+        cls.instance.acknowledge_message(basic_deliver.delivery_tag)
+
     def acknowledge_message(cls, delivery_tag):
         """Acknowledge the message delivery from RabbitMQ by sending a
         Basic.Ack RPC method for the delivery tag.
@@ -342,7 +348,8 @@ class ConsumerQueue(object):
         if cls.instance._channel:
             main.logger.info('Sending a Basic.Cancel RPC command to RabbitMQ')
             cb = functools.partial(
-                cls.instance.on_cancelok, userdata=cls.instance._consumer_tag)
+                cls.instance.on_cancelok, userdata=cls.instance._consumer_tag
+            )
             cls.instance._channel.basic_cancel(cls.instance._consumer_tag, cb)
 
     def on_cancelok(cls, _unused_frame, userdata):
@@ -357,8 +364,8 @@ class ConsumerQueue(object):
         """
         cls.instance._consuming = False
         main.logger.info(
-            'RabbitMQ acknowledged the cancellation of the consumer: %s',
-            userdata)
+            'RabbitMQ acknowledged the cancellation of the consumer: %s', userdata
+        )
         cls.instance.close_channel()
 
     def close_channel(cls):
@@ -415,12 +422,14 @@ class ConsumerQueue(object):
             cls.instance._reconnect_delay = 30
         return cls.instance._reconnect_delay
 
+
 def getConsumerQueue() -> ConsumerQueue:
     return ConsumerQueue(os.environ["CLOUDAMQP_URL"])
 
+
 async def runConsumerQueue():
     consumer = getConsumerQueue()
-    
+
     while True:
         try:
             main.logger.info('Starting cls.instance._consumer.run()')
