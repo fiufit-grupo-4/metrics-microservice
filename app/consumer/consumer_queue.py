@@ -42,6 +42,7 @@ class ConsumerQueue(object):
             cls.instance._consumer_tag = None
             cls.instance._url = amqp_url
             cls.instance._consuming = False
+            cls.instance._reconnect_delay = 0
             # In production, experiment with higher prefetch values
             # for higher consumer throughput
             cls.instance._prefetch_count = 1
@@ -390,62 +391,36 @@ class ConsumerQueue(object):
                 cls.instance._connection.ioloop.stop()
             main.logger.info('Stopped')
 
+    def _maybe_reconnect(cls):
+        if cls.instance.should_reconnect:
+            cls.instance.stop()
+            reconnect_delay = cls.instance._get_reconnect_delay()
+            main.logger.info('Reconnecting after %d seconds', reconnect_delay)
+            time.sleep(reconnect_delay)
+            cls.instance = ConsumerQueue(cls.instance._url)
+
+    def _get_reconnect_delay(cls):
+        if cls.instance.was_consuming:
+            cls.instance._reconnect_delay = 0
+        else:
+            cls.instance._reconnect_delay += 1
+        if cls.instance._reconnect_delay > 30:
+            cls.instance._reconnect_delay = 30
+        return cls.instance._reconnect_delay
 
 def getConsumerQueue() -> ConsumerQueue:
     return ConsumerQueue(os.environ["CLOUDAMQP_URL"])
 
 async def runConsumerQueue():
-    getConsumerQueue().run()
-
-
-# !TODO INTERESANTE PARA RECONECCION.. NO LO VI .. HABRIA QUE CAMBIAR EL SINGLETON :S
-# class ReconnectingExampleConsumer(object):
-#     """This is an example consumer that will reconnect if the nested
-#     ExampleConsumer indicates that a reconnect is necessary.
-
-#     """
-
-#     def __init__(cls.instance, amqp_url):
-#         cls.instance._reconnect_delay = 0
-#         cls.instance._amqp_url = amqp_url
-#         cls.instance._consumer = ConsumerQueue(cls.instance._amqp_url)
-
-#     def run(cls.instance):
-#         while True:
-#             try:
-#                 main.logger.info('Starting cls.instance._consumer.run()')
-#                 cls.instance._consumer.run()
-#             except KeyboardInterrupt:
-#                 main.logger.info('Stopping cls.instance._consumer.stop()')
-#                 cls.instance._consumer.stop()
-#                 break
-#             main.logger.info('Maybe reconnecting cls.instance._maybe_reconnect()')
-#             cls.instance._maybe_reconnect()
-
-#     def _maybe_reconnect(cls.instance):
-#         if cls.instance._consumer.should_reconnect:
-#             cls.instance._consumer.stop()
-#             reconnect_delay = cls.instance._get_reconnect_delay()
-#             main.logger.info('Reconnecting after %d seconds', reconnect_delay)
-#             time.sleep(reconnect_delay)
-#             cls.instance._consumer = ConsumerQueue(cls.instance._amqp_url)
-
-#     def _get_reconnect_delay(cls.instance):
-#         if cls.instance._consumer.was_consuming:
-#             cls.instance._reconnect_delay = 0
-#         else:
-#             cls.instance._reconnect_delay += 1
-#         if cls.instance._reconnect_delay > 30:
-#             cls.instance._reconnect_delay = 30
-#         return cls.instance._reconnect_delay
-
-
-# def main():
-#     logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT)
-#     amqp_url = 'amqp://guest:guest@localhost:5672/%2F'
-#     consumer = ReconnectingExampleConsumer(amqp_url)
-#     consumer.run()
-
-
-# if __name__ == '__main__':
-    # main()
+    consumer = getConsumerQueue()
+    
+    while True:
+        try:
+            main.logger.info('Starting cls.instance._consumer.run()')
+            consumer.run()
+        except KeyboardInterrupt:
+            main.logger.info('Stopping cls.instance._consumer.stop()')
+            consumer.stop()
+            break
+        main.logger.info('Maybe reconnecting cls.instance._maybe_reconnect()')
+        consumer._maybe_reconnect()
