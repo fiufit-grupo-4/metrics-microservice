@@ -16,10 +16,16 @@ entries_router = APIRouter()
 @entries_router.post("/entries")
 async def add_entry(entry: EntryCreate, session: AsyncSession = Depends(get_session)):
     entry = Entry(
-        timestamp=entry.timestamp,
-        service_name=entry.service_name,
-        http_method=entry.http_method,
-        status_code=entry.status_code,
+        service = entry.service,
+        path = entry.path,
+        url = entry.url,
+        method = entry.method,
+        status_code = entry.status_code,
+        datetime = entry.datetime,
+        response_time = entry.response_time,
+        ip = entry.ip,
+        country = entry.country,
+        city = entry.city,
     )
     session.add(entry)
     await session.commit()
@@ -33,10 +39,16 @@ async def get_entry(id: int, session: AsyncSession = Depends(get_session)):
     entry = result.scalars().first()
     return Entry(
         id=entry.id,
-        timestamp=entry.timestamp,
-        service_name=entry.service_name,
-        http_method=entry.http_method,
-        status_code=entry.status_code,
+        service = entry.service,
+        path = entry.path,
+        url = entry.url,
+        method = entry.method,
+        status_code = entry.status_code,
+        datetime = entry.datetime,
+        response_time = entry.response_time,
+        ip = entry.ip,
+        country = entry.country,
+        city = entry.city,
     )
 
 
@@ -47,10 +59,16 @@ async def get_entries(session: AsyncSession = Depends(get_session)):
     return [
         Entry(
             id=entry.id,
-            timestamp=entry.timestamp,
-            service_name=entry.service_name,
-            http_method=entry.http_method,
-            status_code=entry.status_code,
+        service = entry.service,
+        path = entry.path,
+        url = entry.url,
+        method = entry.method,
+        status_code = entry.status_code,
+        datetime = entry.datetime,
+        response_time = entry.response_time,
+        ip = entry.ip,
+        country = entry.country,
+        city = entry.city,
         )
         for entry in entries
     ]

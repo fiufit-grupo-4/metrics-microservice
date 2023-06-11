@@ -2,10 +2,17 @@ from sqlmodel import SQLModel, Field
 
 
 class EntryBase(SQLModel):
-    timestamp: str
-    service_name: str
-    http_method: str
+    service: str
+    path: str
+    url: str
+    method: str
     status_code: int
+    datetime: str
+    response_time: float
+    ip: str
+    country: str
+    city: str
+
 
 
 class Entry(EntryBase, table=True):

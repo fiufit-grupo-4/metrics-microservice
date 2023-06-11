@@ -1,9 +1,11 @@
 import json
 from fastapi import Request, Response
 import app.main as main
+from app.db import get_session
+from app.models import EntryCreate, Entry
 
 
-async def MesseageQueueWrapper(channel, basic_deliver, properties, message):
+async def MessageQueueWrapper(channel, basic_deliver, properties, message):
     """
     Wrapper de la funcion "ConsumerQueue.on_message()"
 
@@ -12,14 +14,15 @@ async def MesseageQueueWrapper(channel, basic_deliver, properties, message):
     :param pika.Spec.BasicProperties: properties
     :param bytes body: The message body
     """
-
     message = json.loads(message.decode('utf-8'))
-    main.logger.info(f"MESSAGE RECEIVED: {message}")
 
-    # ACA METER LA LOGICA DE LO QUE SE QUIERE HACER CON EL MENSAJE QUE SE RECIBE
-    # GUARDAR EN POSTGRESQL!!
-    # pensar bien que guardar.. conviene guardar cada requests? apareceran millones de rows
-    # o quizas conviene guardar ciertos requests... o los que piden
-    # o guardar.. tal requests se hizo tantas veces en tal dia .. o tal requests se ejecuto tantas veces
-    # o tal requests devolvio tal status code tantas veces
-    # es pa pensar! y definir bien que metrics mostrar en backoffice en base a lo que se guarda!
+    async for session in get_session():
+        entry = EntryCreate(**message)
+        entry_dict = entry.dict()
+        db_entry = Entry(**entry_dict)
+        session.add(db_entry)
+        await session.commit()
+        await session.refresh(db_entry)
+        main.logger.info(f"Entry {db_entry.id} added to database")
+
+

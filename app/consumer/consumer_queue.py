@@ -2,7 +2,7 @@ import functools
 import os
 import time
 import pika
-from app.consumer.message_queue_wrapper import MesseageQueueWrapper
+from app.consumer.message_queue_wrapper import MessageQueueWrapper
 from app.consumer.queue_settings import EXCHANGE, EXCHANGE_TYPE, QUEUE, ROUTING_KEY
 import app.main as main
 
@@ -325,7 +325,7 @@ class ConsumerQueue(object):
         """
         # recibiré mensajes y los proceso de forma asincrona
         cls.instance._connection.ioloop.create_task(
-            MesseageQueueWrapper(channel, basic_deliver, properties, body)
+            MessageQueueWrapper(channel, basic_deliver, properties, body)
         )
         # !TODO ni idea para que son los ACK en esto, pero por las dudas..
         cls.instance.acknowledge_message(basic_deliver.delivery_tag)
