@@ -14,7 +14,6 @@ class EntryBase(SQLModel):
     city: str
 
 
-
 class Entry(EntryBase, table=True):
     id: int = Field(default=None, primary_key=True)
 

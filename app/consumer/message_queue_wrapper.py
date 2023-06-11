@@ -24,5 +24,3 @@ async def MessageQueueWrapper(channel, basic_deliver, properties, message):
         await session.commit()
         await session.refresh(db_entry)
         main.logger.info(f"Entry {db_entry.id} added to database")
-
-
