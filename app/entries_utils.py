@@ -1,10 +1,8 @@
 import logging
-from fastapi import APIRouter, Depends, status
-from app.db import get_session
+from fastapi import APIRouter
 from app.models import Entry, EntryCreate, EntryUpdate
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette.responses import JSONResponse
 
 # https://fastapi.tiangolo.com/advanced/async-sql-databases/ 😎
 

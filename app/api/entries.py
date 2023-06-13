@@ -1,6 +1,11 @@
 import logging
 from fastapi import APIRouter, Depends, status
-from app.db_utils import (
+from app.db import get_session
+from app.models import Entry, EntryCreate, EntryUpdate
+from sqlalchemy.future import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import JSONResponse
+from app.entries_utils import (
     add_db_entry,
     delete_all_db_entries,
     delete_db_entry,
@@ -8,11 +13,6 @@ from app.db_utils import (
     get_db_entry_by_id,
     update_db_entry,
 )
-from app.db import get_session
-from app.models import Entry, EntryCreate, EntryUpdate
-from sqlalchemy.future import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from starlette.responses import JSONResponse
 
 # https://fastapi.tiangolo.com/advanced/async-sql-databases/ 😎
 

@@ -1,10 +1,10 @@
 import asyncio
 import logging
 from logging.config import dictConfig
+from fastapi import FastAPI
 from app.consumer.consumer_queue import runConsumerQueue
 from .log_config import logconfig
 from dotenv import load_dotenv
-from fastapi import FastAPI
 from app.db import init_db
 from app.api.entries import entries_router
 
