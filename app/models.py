@@ -1,3 +1,4 @@
+from typing import Optional
 from sqlmodel import SQLModel, Field
 
 
@@ -20,3 +21,16 @@ class Entry(EntryBase, table=True):
 
 class EntryCreate(EntryBase):
     pass
+
+
+class EntryUpdate(SQLModel):
+    service: Optional[str]
+    path: Optional[str]
+    url: Optional[str]
+    method: Optional[str]
+    status_code: Optional[str]
+    datetime: Optional[str]
+    response_time: Optional[str]
+    ip: Optional[str]
+    country: Optional[str]
+    city: Optional[str]
