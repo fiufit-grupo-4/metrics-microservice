@@ -1,130 +1,79 @@
 import logging
-from typing import List
 from fastapi import APIRouter, Depends, status
+from app.api.db_utils import (
+    add_db_entry,
+    delete_all_db_entries,
+    delete_db_entry,
+    get_db_entries,
+    get_db_entry_by_id,
+    update_db_entry,
+)
 from app.db import get_session
 from app.models import Entry, EntryCreate, EntryUpdate
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import JSONResponse
 
-logger = logging.getLogger('app')
-entries_router = APIRouter()
-
-
 # https://fastapi.tiangolo.com/advanced/async-sql-databases/ 😎
+
+entries_router = APIRouter()
+logger = logging.getLogger('app')
 
 
 @entries_router.post("/entries")
 async def add_entry(entry: EntryCreate, session: AsyncSession = Depends(get_session)):
-    entry = Entry(
-        service=entry.service,
-        path=entry.path,
-        url=entry.url,
-        method=entry.method,
-        status_code=entry.status_code,
-        datetime=entry.datetime,
-        response_time=entry.response_time,
-        ip=entry.ip,
-        country=entry.country,
-        city=entry.city,
-    )
-    session.add(entry)
-    await session.commit()
-    await session.refresh(entry)
-    return entry
+    entry_obj = await add_db_entry(entry, session)
+    return entry_obj
 
 
 @entries_router.get("/entries/{id}", response_model=Entry)
 async def get_entry(id: int, session: AsyncSession = Depends(get_session)):
-    result = await session.execute(select(Entry).where(Entry.id == id))
-    entry = result.scalars().first()
-    return Entry(
-        id=entry.id,
-        service=entry.service,
-        path=entry.path,
-        url=entry.url,
-        method=entry.method,
-        status_code=entry.status_code,
-        datetime=entry.datetime,
-        response_time=entry.response_time,
-        ip=entry.ip,
-        country=entry.country,
-        city=entry.city,
-    )
+    entry = await get_db_entry_by_id(id=id, session=session)
+    return entry
 
 
 @entries_router.get("/entries", response_model=list[Entry])
 async def get_entries(session: AsyncSession = Depends(get_session)):
-    result = await session.execute(select(Entry))
-    entries = result.scalars().all()
-    return [
-        Entry(
-            id=entry.id,
-            service=entry.service,
-            path=entry.path,
-            url=entry.url,
-            method=entry.method,
-            status_code=entry.status_code,
-            datetime=entry.datetime,
-            response_time=entry.response_time,
-            ip=entry.ip,
-            country=entry.country,
-            city=entry.city,
-        )
-        for entry in entries
-    ]
+    entries = await get_db_entries(session=session)
+    return entries
 
 
 @entries_router.put("/entries/{id}")
 async def update_entry(
     id: int, updates: EntryUpdate, session: AsyncSession = Depends(get_session)
 ):
-    item = await session.get(Entry, id)
-    logging.critical("item: %s", item)
-    if not item:
+    entry = await update_db_entry(id, updates, session)
+    if not entry:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content=f'Entry {id} not found',
+            content=f"Entry {id} not found",
         )
-
-    for key, value in updates.dict(exclude_unset=True).items():
-        setattr(item, key, value)
-
-    # Commit the changes
-    await session.commit()
-
-    # Refresh the item object to reflect the updated values
-    await session.refresh(item)
-
-    return item
+    return entry
 
 
 @entries_router.delete("/entries/{id}")
 async def delete_entry(id: int, session: AsyncSession = Depends(get_session)):
-    item = await session.get(Entry, id)
-    if not item:
+    response = await delete_db_entry(id, session)
+    if not response:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content=f'Entry {id} not found',
+            content=f"Entry {id} not found",
         )
-
-    await session.delete(item)
-    await session.commit()
-
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content=f'Entry {id} deleted',
+        content=f"Entry {id} deleted",
     )
 
 
 @entries_router.delete("/entries")
-async def delete_all(session: AsyncSession = Depends(get_session)):
-    result = await session.execute(select(Entry))
-    entries = result.scalars().all()
-    for entry in entries:
-        await session.delete(entry)
-    await session.commit()
+async def delete_entries(session: AsyncSession = Depends(get_session)):
+    entries = await delete_all_db_entries(session)
+    if not entries:
+        return JSONResponse(
+            status_code=status.HTTP_204_NO_CONTENT,
+            content="No entries to delete",
+        )
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content='All entries deleted',
+        content="All entries have been deleted successfully",
     )
