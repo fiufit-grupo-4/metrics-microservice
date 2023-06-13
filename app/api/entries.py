@@ -1,6 +1,6 @@
 import logging
 from fastapi import APIRouter, Depends, status
-from app.api.db_utils import (
+from app.db_utils import (
     add_db_entry,
     delete_all_db_entries,
     delete_db_entry,
