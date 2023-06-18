@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Dict, Optional
 from sqlmodel import SQLModel, Field
 
 
@@ -10,9 +10,12 @@ class EntryBase(SQLModel):
     status_code: int
     datetime: str
     response_time: float
+    user_id: str
     ip: str
-    country: str
-    city: str
+    country: str = ""
+    action: str
+    training_id: str = ""
+    training_type: str = ""
 
 
 class Entry(EntryBase, table=True):
@@ -31,6 +34,7 @@ class EntryUpdate(SQLModel):
     status_code: Optional[str]
     datetime: Optional[str]
     response_time: Optional[str]
+    user_id: str
     ip: Optional[str]
     country: Optional[str]
-    city: Optional[str]
+    action: Optional[str]

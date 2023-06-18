@@ -1,8 +1,12 @@
 import logging
+import json
 from fastapi import APIRouter
+from sqlalchemy import and_, or_
+from app.definitions import BLOCK, GOOGLE_SIGNUP, SIGNUP
 from app.models import Entry, EntryCreate, EntryUpdate
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 # https://fastapi.tiangolo.com/advanced/async-sql-databases/ 😎
 
@@ -19,9 +23,12 @@ async def add_db_entry(entry: EntryCreate, session: AsyncSession):
         status_code=entry.status_code,
         datetime=entry.datetime,
         response_time=entry.response_time,
+        user_id=entry.user_id,
         ip=entry.ip,
         country=entry.country,
-        city=entry.city,
+        action=entry.action,
+        training_id=entry.training_id,
+        training_type=entry.training_type,
     )
     session.add(entry)
     await session.commit()
@@ -42,28 +49,28 @@ async def get_db_entries(session: AsyncSession):
 
 
 async def update_db_entry(id: int, updates: EntryUpdate, session: AsyncSession):
-    item = await session.get(Entry, id)
-    if not item:
+    entry = await session.get(Entry, id)
+    if not entry:
         return None
 
     for key, value in updates.dict(exclude_unset=True).items():
-        setattr(item, key, value)
+        setattr(entry, key, value)
 
     await session.commit()
-    await session.refresh(item)
+    await session.refresh(entry)
 
-    return item
+    return entry
 
 
 async def delete_db_entry(id: int, session: AsyncSession):
-    item = await session.get(Entry, id)
-    if not item:
-        None
+    entry = await session.get(Entry, id)
+    if not entry:
+        return None
 
-    await session.delete(item)
+    await session.delete(entry)
     await session.commit()
 
-    return item
+    return entry
 
 
 async def delete_all_db_entries(session: AsyncSession):
@@ -73,3 +80,56 @@ async def delete_all_db_entries(session: AsyncSession):
         await session.delete(entry)
     await session.commit()
     return entries
+
+
+async def update_db_entry_location(user_id: str, country: str, session: AsyncSession):
+    result = await session.execute(
+        select(Entry).where(and_(Entry.user_id == user_id, Entry.action == SIGNUP))
+    )
+    entry = result.scalars().one_or_none()
+
+    if not entry:
+        return None
+
+    setattr(entry, "country", country)
+
+    await session.commit()
+    await session.refresh(entry)
+
+    return entry
+
+
+async def delete_db_entry_by_user_and_action(
+    user_id: str, action: str, session: AsyncSession
+):
+    result = await session.execute(
+        select(Entry).where(and_(Entry.user_id == user_id, Entry.action == action))
+    )
+    entry = result.scalars().one_or_none()
+
+    if not entry:
+        return None
+
+    await session.delete(entry)
+    await session.commit()
+
+    return entry
+
+
+async def delete_db_entry_by_training_and_action(
+    training_id: str, action: str, session: AsyncSession
+):
+    result = await session.execute(
+        select(Entry).where(
+            and_(Entry.training_id == training_id, Entry.action == action)
+        )
+    )
+    entry = result.scalars().one_or_none()
+
+    if not entry:
+        return None
+
+    await session.delete(entry)
+    await session.commit()
+
+    return entry

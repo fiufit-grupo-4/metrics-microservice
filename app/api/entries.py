@@ -20,25 +20,25 @@ entries_router = APIRouter()
 logger = logging.getLogger('app')
 
 
-@entries_router.post("/entries")
+@entries_router.post("/")
 async def add_entry(entry: EntryCreate, session: AsyncSession = Depends(get_session)):
     entry_obj = await add_db_entry(entry, session)
     return entry_obj
 
 
-@entries_router.get("/entries/{id}", response_model=Entry)
+@entries_router.get("/{id}", response_model=Entry)
 async def get_entry(id: int, session: AsyncSession = Depends(get_session)):
     entry = await get_db_entry_by_id(id=id, session=session)
     return entry
 
 
-@entries_router.get("/entries", response_model=list[Entry])
+@entries_router.get("/", response_model=list[Entry])
 async def get_entries(session: AsyncSession = Depends(get_session)):
     entries = await get_db_entries(session=session)
     return entries
 
 
-@entries_router.put("/entries/{id}")
+@entries_router.put("/{id}")
 async def update_entry(
     id: int, updates: EntryUpdate, session: AsyncSession = Depends(get_session)
 ):
@@ -51,7 +51,7 @@ async def update_entry(
     return entry
 
 
-@entries_router.delete("/entries/{id}")
+@entries_router.delete("/{id}")
 async def delete_entry(id: int, session: AsyncSession = Depends(get_session)):
     response = await delete_db_entry(id, session)
     if not response:
@@ -65,7 +65,7 @@ async def delete_entry(id: int, session: AsyncSession = Depends(get_session)):
     )
 
 
-@entries_router.delete("/entries")
+@entries_router.delete("/")
 async def delete_entries(session: AsyncSession = Depends(get_session)):
     entries = await delete_all_db_entries(session)
     if not entries:

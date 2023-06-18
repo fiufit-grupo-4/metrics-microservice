@@ -7,6 +7,7 @@ from .log_config import logconfig
 from dotenv import load_dotenv
 from app.db import init_db
 from app.api.entries import entries_router
+from app.api.history import history_router
 
 
 dictConfig(logconfig)
@@ -32,4 +33,10 @@ app.include_router(
     entries_router,
     prefix="/entries",
     tags=["Entries - Metrics Microservice"],
+)
+
+app.include_router(
+    history_router,
+    prefix="/history",
+    tags=["History - Metrics Microservice"],
 )
