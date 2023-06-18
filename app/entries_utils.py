@@ -2,7 +2,7 @@ import logging
 import json
 from fastapi import APIRouter
 from sqlalchemy import and_, or_
-from app.definitions import BLOCK, GOOGLE_SIGNUP, SIGNUP
+from app.definitions import BLOCK, GOOGLE_SIGNUP, NEW_TRAINING, SIGNUP
 from app.models import Entry, EntryCreate, EntryUpdate
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -133,3 +133,23 @@ async def delete_db_entry_by_training_and_action(
     await session.commit()
 
     return entry
+
+
+async def delete_db_all_entries_with_training_id(
+    training_id: str, session: AsyncSession
+):
+    """
+    Deletes all entries with the specified training ID
+    """
+    result = await session.execute(
+        select(Entry).where(Entry.training_id == training_id)
+    )
+
+    entries = result.scalars().all()
+    logger.critical(entries)
+    for entry in entries:
+        await session.delete(entry)
+
+    await session.commit()
+
+    return entries

@@ -1,7 +1,7 @@
 import json
-from fastapi import Request, Response
 from app.entries_utils import (
     add_db_entry,
+    delete_db_all_entries_with_training_id,
     delete_db_entry_by_training_and_action,
     delete_db_entry_by_user_and_action,
     update_db_entry_location,
@@ -11,6 +11,7 @@ from app.db import get_session
 from app.definitions import (
     ADD_TRAINING_TO_FAVS,
     BLOCK,
+    DELETE_TRAINING,
     MEDIA_UPLOAD,
     NEW_TRAINING,
     REMOVE_TRAINING_FROM_FAVS,
@@ -52,6 +53,9 @@ async def MessageQueueWrapper(channel, basic_deliver, properties, message):
                 await delete_db_entry_by_training_and_action(
                     training_id, ADD_TRAINING_TO_FAVS, session
                 )
+            elif action == DELETE_TRAINING:
+                training_id = message.get("training_id")
+                await delete_db_all_entries_with_training_id(training_id, session)
             else:
                 await add_db_entry(EntryCreate(**message), session)
 
