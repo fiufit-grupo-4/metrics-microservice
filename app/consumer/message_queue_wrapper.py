@@ -53,12 +53,12 @@ async def MessageQueueWrapper(channel, basic_deliver, properties, message):
                 await delete_db_entry_by_training_and_action(
                     training_id, ADD_TRAINING_TO_FAVS, session
                 )
-            elif action == DELETE_TRAINING:
-                training_id = message.get("training_id")
-                await delete_db_all_entries_with_training_id(training_id, session)
             else:
                 await add_db_entry(EntryCreate(**message), session)
 
         if service == TRAINING_SERVICE:
             if action in (NEW_TRAINING, MEDIA_UPLOAD):
                 await add_db_entry(EntryCreate(**message), session)
+            elif action == DELETE_TRAINING:
+                training_id = message.get("training_id")
+                await delete_db_all_entries_with_training_id(training_id, session)

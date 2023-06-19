@@ -146,7 +146,7 @@ async def delete_db_all_entries_with_training_id(
     )
 
     entries = result.scalars().all()
-    logger.critical(entries)
+
     for entry in entries:
         await session.delete(entry)
 
