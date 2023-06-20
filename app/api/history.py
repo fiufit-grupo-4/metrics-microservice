@@ -11,6 +11,7 @@ from app.definitions import (
 )
 from app.models import Entry, EntryCreate, EntryUpdate
 from sqlalchemy.future import select
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import JSONResponse
 from collections import Counter
@@ -18,10 +19,6 @@ from collections import Counter
 # https://fastapi.tiangolo.com/advanced/async-sql-databases/ 😎
 
 history_router = APIRouter()
-logger = logging.getLogger('app')
-
-
-from sqlalchemy import func
 
 
 @history_router.get("/users_auth", response_model=dict)
@@ -174,25 +171,26 @@ async def get_trainings_per_type(session: AsyncSession = Depends(get_session)):
     return counts
 
 
-@history_router.get("/trainings_type_per_location", response_model=dict)
-async def get_trainings_type_per_location(session: AsyncSession = Depends(get_session)):
+@history_router.get("/favorite_trainings_per_location", response_model=dict)
+async def get_favorite_trainings_per_location(
+    session: AsyncSession = Depends(get_session),
+):
     """
-    Returns a dict with the number of trainings per type by location
+    Returns a dict with the number of favourite trainings per location.
+    Empty string ("") indicates unknown locations.
     """
 
     counts_query = (
-        select(func.count(), Entry.training_type, Entry.country)
-        .where(Entry.service == TRAINING_SERVICE)
-        .where(Entry.action == NEW_TRAINING)
-        .group_by(Entry.training_type, Entry.country)
+        select(func.count(), Entry.country)
+        .where(Entry.service == USER_SERVICE)
+        .where(Entry.action == ADD_TRAINING_TO_FAVS)
+        .group_by(Entry.country)
     )
 
     counts_result = await session.execute(counts_query)
-
-    counts = {
-        training_type[2]: (training_type[1], training_type[0])
-        for training_type in counts_result
-    }
+    counts = {}
+    for user in counts_result:
+        counts[user["country"]] = user["count"]
 
     return counts
 
@@ -211,7 +209,6 @@ async def get_favorite_trainings_by_user(session: AsyncSession = Depends(get_ses
     )
 
     counts_result = await session.execute(counts_query)
-
-    counts = {user[1]: user[0] for user in counts_result}
+    counts = {user["user_id"]: user["count"] for user in counts_result}
 
     return counts
