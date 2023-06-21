@@ -1,13 +1,6 @@
 services:
-  mongodb:
-    image: mongo:5.0
-    ports:
-      - ${DB_PORT}:${DB_PORT}
-    volumes:
-      - ~/apps/mongo:/data/db
-
-  service_example:
-    image: service_example
+  metrics_service:
+    image: metrics_service
     build:
       context: .
       dockerfile: Dockerfile
@@ -17,6 +10,4 @@ services:
       - .env
     ports:
       - ${PORT}:${PORT}
-    depends_on:
-      - mongodb
     tty: true
