@@ -1,5 +1,5 @@
 ignore:
-  - 'app/db.py'
   - 'app/definitions.py'
   - 'app/log_config.py'
   - 'app/main.py'
+  - 'api/*.py'
