@@ -6,7 +6,7 @@ comment:
   require_head: yes       
   branches: null
 ignore:
-  - app/db.py
-  - app/definitions.py
-  - app/log_config.py
-  - app/main.py
+  - db.py
+  - definitions.py
+  - log_config.py
+  - main.py
