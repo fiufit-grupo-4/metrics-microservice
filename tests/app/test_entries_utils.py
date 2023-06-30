@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 from app.models import EntryCreate, Entry, EntryUpdate
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
-from app.entries_utils import add_db_entry, delete_all_db_entries, delete_db_all_entries_with_training_id, delete_db_entry, get_db_entries, get_db_entry_by_id, update_db_entry, update_db_entry_location
+from app.entries_utils import add_db_entry, delete_all_db_entries, delete_db_all_entries_with_training_id, delete_db_entry, delete_db_entry_by_training_and_action, get_db_entries, get_db_entry_by_id, update_db_entry, update_db_entry_location
 
 deprecations.SILENCE_UBER_WARNING = True
 
@@ -270,4 +270,31 @@ async def test_delete_db_all_entries_with_training_id(async_db_engine):
         session.committed
 
         assert result == entries
+
+
+@pytest.mark.asyncio
+async def test_delete_db_entry_by_training_and_action(async_db_engine):
+    session = MockAsyncSession()
+
+    training_id = "4d5e6f"
+    action = "login"
+
+    entry_1_dict["id"] = "1a2b3c"
+    entry_1_dict["training_id"] = training_id
+
+    entry = Entry(**entry_1_dict)
+    await session.add(entry)
+
+    result_mock = MagicMock()
+    result_mock.scalars.return_value.one_or_none.return_value = entry
+    scalars_mock = MagicMock(return_value=result_mock)
+
+    with patch.object(session, 'execute', return_value=result_mock):
+        result = await delete_db_entry_by_training_and_action(training_id, action, session)
+        session.execute.assert_called_once
+        session.committed
+
+        assert result == entry
+        assert len(session.added_objects) == 0
+
 
