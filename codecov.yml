@@ -2,4 +2,4 @@ ignore:
   - 'app/definitions.py'
   - 'app/log_config.py'
   - 'app/main.py'
-  - 'api/*.py'
+  - 'app/api/*.py'
