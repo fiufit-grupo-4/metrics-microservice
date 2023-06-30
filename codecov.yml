@@ -1,12 +1,5 @@
-comment:
-  layout: "reach, diff, flags, files"
-  behavior: default
-  require_changes: false  
-  require_base: yes
-  require_head: yes       
-  branches: null
 ignore:
-  - db.py
-  - definitions.py
-  - log_config.py
-  - main.py
+  - 'app/db.py'
+  - 'app/definitions.py'
+  - 'app/log_config.py'
+  - 'app/main.py'
