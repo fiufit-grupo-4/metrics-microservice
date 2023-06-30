@@ -48,6 +48,10 @@ After any change in *pyproject.toml* file (always execute this before installing
 
 ```$ poetry run pytest tests```
 
+### Run tests with coverage:
+
+```$ poetry run pytest --cov-report term --cov-report xml:coverage.xml --cov```
+
 ### Format check:
 
 ```$ poetry run flake8 --max-line-length=88 app```
