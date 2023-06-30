@@ -1,6 +1,11 @@
 comment:
   layout: "reach, diff, flags, files"
   behavior: default
+  ignore:
+  - "app/db.py"
+  - "app/definitions.py"
+  - "app/log_config.py"
+  - "app/main.py"
   require_changes: false  
   require_base: yes
   require_head: yes       
